@@ -1,11 +1,12 @@
-var wheel, gradient, r, arc, steps, data;
+var svg, r;
 
 function init() {
+  r = 200;
   createWheel("wheel", 400);
 }
 
 function createWheel(element, size){
-  r = size/2;
+  var gradient, arc, data;
 
   // create the arc function
   arc = d3.svg.arc().innerRadius(0).outerRadius(r).startAngle(function(d) {
@@ -26,13 +27,13 @@ function createWheel(element, size){
   });
 
   // create the svg
-  wheel = d3.select("#" + element).insert('svg')
+  svg = d3.select("#" + element).insert('svg')
     .attr("width", r*2)
     .attr("height", r*2)
     .style("border", "1px solid black");
 
   // append gray gradient circle
-  gradient = wheel.append("svg:defs").append("svg:radialGradient")
+  gradient = svg.append("svg:defs").append("svg:radialGradient")
     .attr("id", "gradient")
     .attr("cx", "50%").attr("cy", "50%") // center point (this & r = edge)
     .attr("r", "50%")
@@ -44,7 +45,7 @@ function createWheel(element, size){
     .attr("stop-color", "rgb(100,100,100)").attr("stop-opacity", 0);
 
   // append color fan
-  wheel.attr("id", "icon").append('g')
+  svg.attr("id", "icon").append('g')
     //.attr("transform", "translate(" + r + "," + r + ") rotate(90) scale(-1,1)") // why flip and rotate?
     .attr("transform", "translate(" + r + "," + r + ")")
     .selectAll('path').data(data).enter()
@@ -56,5 +57,17 @@ function createWheel(element, size){
       });
 
   // append circle with gradient on top
-  wheel.append("circle").attr("cx", r).attr("cy", r).attr("r", r).attr("fill", "url('#gradient')");
+  svg.append("circle").attr("cx", r).attr("cy", r).attr("r", r).attr("fill", "url('#gradient')");
+  // add cursor
+  svg.append("circle").attr("id","cursor").attr("cx", r).attr("cy", r).attr("r", 10).attr("stroke", "black").attr("stroke-width", 2).style("fill-opacity", 0);;
+  // move cursor with mouse
+  svg.on("mousemove", moveCursor);
+}
+
+function moveCursor(){
+  var point = d3.mouse(this);
+  var distance = Math.abs(Math.sqrt((point[0]-r)*(point[0]-r) + (point[1]-r)*(point[1]-r)));
+  console.log(distance);
+  if (distance < r)
+  svg.select("#cursor").attr("cx", point[0]).attr("cy", point[1]);
 }
