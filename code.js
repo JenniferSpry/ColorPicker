@@ -134,18 +134,22 @@ function setHueAndSaturation(p) {
     var point = p || d3.mouse(this);
     var distance = Math.abs(Math.sqrt((point[0]-r)*(point[0]-r) + (point[1]-r)*(point[1]-r)));
 
-    if (distance < r) {
-      svg.select("#circleCursor").attr("cx", point[0]).attr("cy", point[1]);
-      var colorRadius = (Math.atan2((point[1]-r), (point[0]-r)) * 180/Math.PI) + 90;
-      // + 90 because the arc starts at 12 o'clock
-      if (colorRadius < 0) colorRadius += 360;
+    // reposition cursor
+    svg.select("#circleCursor").attr("cx", point[0]).attr("cy", point[1]);
 
-      svg.select("#cursor").attr("cx", point[0]).attr("cy", point[1]);
-      svg.select("#lightnessScaleColor").style("fill", d3.hsl(colorRadius, distance/r, 0.5).toString());
-      hue = colorRadius;
-      saturation = distance/r;
-      updateColor();
-    }
+    // calculate the angle for hue
+    var colorRadius = (Math.atan2((point[1]-r), (point[0]-r)) * 180/Math.PI) + 90;
+    // + 90 because the arc starts at 12 o'clock
+    if (colorRadius < 0) colorRadius += 360;
+
+    // adjust scale color
+    svg.select("#lightnessScaleColor").style("fill", d3.hsl(colorRadius, distance/r, 0.5).toString());
+
+    // set new color values
+    hue = colorRadius;
+    saturation = distance/r;
+
+    updateColor();
   }
 }
 
@@ -162,13 +166,19 @@ function setScaleNotMoving() {
 function setLightness(p) {
   if(scaleMoving){
     var point = p || d3.mouse(this);
+
+    // reposition line cursor
     svg.select("#lightnessScaleCursor").attr("x", point[0]);
+    // change color so it is still visible on black and white
     if (point[0] < r) {
       svg.select("#lightnessScaleCursor").style("fill", "white");
     } else {
       svg.select("#lightnessScaleCursor").style("fill", "black");
     }
+
+    // set new color value
     lightness = point[0]/(2*r);
+
     updateColor();
   }
 }
