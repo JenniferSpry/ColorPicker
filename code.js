@@ -4,10 +4,10 @@ var hue, saturation, lightness;
 
 function init() {
   r = 200;
-  createWheel("wheel", r);
+  createWheel("wheel");
 }
 
-function createWheel(element, r){
+function createWheel(element){
   var gradient, arc, data, grayCircle, lightnessScale;
 
   // it starts with red
@@ -37,7 +37,6 @@ function createWheel(element, r){
   svg = d3.select("#" + element).insert('svg')
     .attr("width", r*2)
     .attr("height", r*2+r/10+r/6);
-    //.style("border", "1px solid black");
 
   // append gray gradient
   gradient = svg.append("svg:defs").append("svg:radialGradient")
@@ -46,7 +45,7 @@ function createWheel(element, r){
     .attr("r", "50%")
     .attr("fx", "50%").attr("fy", "50%") // focal point (percieved middle)
     .attr("spreadMethod", "pad"); // what to to at the end of the gradient (continue color)
-  gradient.append("svg:stop").attr("offset", "20%")
+  gradient.append("svg:stop").attr("offset", "10%")
     .attr("stop-color", "rgb(150,150,150)").attr("stop-opacity", 1);
   gradient.append("svg:stop").attr("offset", "100%")
     .attr("stop-color", "rgb(150,150,150)").attr("stop-opacity", 0);
@@ -62,13 +61,16 @@ function createWheel(element, r){
   gradient.append("svg:stop").attr("offset", "100%")
     .attr("stop-color", "rgb(255,255,255)").attr("stop-opacity", 1);
 
-  // append lightness scale
+  // append lightness scale ______________________________________________
+  // color rectangle
   svg.append("rect").attr("id", "lightnessScaleColor")
     .attr("x", 0)
     .attr("y", 2*r+r/10)
     .attr("width", 2*r)
     .attr("height", r/6)
-    .style("fill", d3.hsl(hue, saturation, lightness).toString());
+    .style("fill", d3.hsl(hue, saturation, lightness).toString()); // to an RGB hexadecimal string
+
+  // gradient rectangle
   lightnessScale = svg.append("rect").attr("id", "lightnessScale")
     .attr("x", 0)
     .attr("y", 2*r+r/10)
@@ -76,21 +78,17 @@ function createWheel(element, r){
     .attr("height", r/6)
     .style("fill", "url(#blackToWhiteGradient)");
 
-  // append lightness scale cursor
+  // line cursor
   svg.append("rect").attr("id", "lightnessScaleCursor")
     .attr("x", r).attr("y", 2*r+r/10)
     .attr("width", 3).attr("height", r/6)
     .style("fill", "black")
-    .attr("pointer-events", "none");
+    .attr("pointer-events", "none"); // so I can put the event listener on the element below
 
-  // add listerners on lightness scale
-  lightnessScale.on("mousemove", setLightness)
-    .on("mousedown", setScaleMoving)
-    .on("mouseup", setScaleNotMoving);
-
-  // append color fan
+  // append color fan __________________________________________________
+  // color pieces
   svg.attr("id", "icon").append('g')
-    .attr("transform", "translate(" + r + "," + r + ")")
+    .attr("transform", "translate(" + r + "," + r + ")") // position in the middle
     .selectAll('path').data(data).enter()
     .append('path').attr("d", arc)
     .attr("stroke-width", 1).attr("stroke", function(d) { // stroke to prevent tiny gaps
@@ -99,14 +97,22 @@ function createWheel(element, r){
         return d.fill;
       });
 
-  // append circle with gradient on top
+  // circle with gradient
   grayCircle = svg.append("circle").attr("cx", r).attr("cy", r).attr("r", r).attr("fill", "url('#grayGradient')");
-  // add circle cursor
+  
+  // circle cursor
   svg.append("circle").attr("id","circleCursor").attr("cx", r).attr("cy", 5).attr("r", 10).attr("stroke", "black")
     .attr("stroke-width", 2).style("fill-opacity", 0).attr("pointer-events", "none"); // ignore this when it comes to events
   
-  // add result color view 
+  // add result color view _____________________________________________
   svg.append("circle").attr("id", "resultColor").attr("cx", 2*r-r/7).attr("cy",r/7).attr("r", r/8).attr("fill", d3.hsl(hue, saturation, lightness).toString());
+  
+  // add listeners _____________________________________________________
+  // add listerners on lightness scale
+  lightnessScale.on("mousemove", setLightness)
+    .on("mousedown", setScaleMoving)
+    .on("mouseup", setScaleNotMoving);
+
   // move cursor with mouse
   grayCircle.on("mousemove", setHueAndSaturation)
     .on("mousedown", setCircleMoving)
@@ -118,18 +124,20 @@ function setCircleMoving() {
 }
 
 function setCircleNotMoving() {
+  var point = d3.mouse(this);
+  setHueAndSaturation(point);
   circleMoving = false;
 }
 
-function setHueAndSaturation() {
+function setHueAndSaturation(p) {
   if (circleMoving) {
-    var point = d3.mouse(this);
-    var distance = Math.abs(Math.sqrt((point[0]-r)*(point[0]-r) + (point[1]-r)*(point[1]-r)))
+    var point = p || d3.mouse(this);
+    var distance = Math.abs(Math.sqrt((point[0]-r)*(point[0]-r) + (point[1]-r)*(point[1]-r)));
 
     if (distance < r) {
       svg.select("#circleCursor").attr("cx", point[0]).attr("cy", point[1]);
-      var colorRadius = Math.atan2((point[1]-r), (point[0]-r)) * 180/Math.PI;
-      colorRadius += 90;
+      var colorRadius = (Math.atan2((point[1]-r), (point[0]-r)) * 180/Math.PI) + 90;
+      // + 90 because the arc starts at 12 o'clock
       if (colorRadius < 0) colorRadius += 360;
 
       svg.select("#cursor").attr("cx", point[0]).attr("cy", point[1]);
@@ -146,12 +154,14 @@ function setScaleMoving() {
 }
 
 function setScaleNotMoving() {
+  var point = d3.mouse(this);
+  setLightness(point);
   scaleMoving = false;
 }
 
-function setLightness() {
+function setLightness(p) {
   if(scaleMoving){
-    var point = d3.mouse(this);
+    var point = p || d3.mouse(this);
     svg.select("#lightnessScaleCursor").attr("x", point[0]);
     if (point[0] < r) {
       svg.select("#lightnessScaleCursor").style("fill", "white");
@@ -164,6 +174,5 @@ function setLightness() {
 }
 
 function updateColor(){
-  //console.log("H: "+ hue + " S: " + saturation + " L: "+ lightness);
   svg.select("#resultColor").attr("fill", d3.hsl(hue, saturation, lightness).toString());
 }
